@@ -1,0 +1,10 @@
+version: "2"
+services:
+  terraform-provider-samson-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.build
+    image: terraform-providers/terraform-provider-samson-test
+    volumes:
+      - /go/src/github.com/terraform-providers/terraform-provider-samson/vendor
+      - .:/go/src/github.com/terraform-providers/terraform-provider-samson
