@@ -20,6 +20,7 @@ func Provider() terraform.ResourceProvider {
 
 		ResourcesMap: map[string]*schema.Resource{
 			"samson_project": resourceSamsonProjects(),
+			"samson_command": resourceSamsonCommands(),
 		},
 
 		ConfigureFunc: providerConfigure,
