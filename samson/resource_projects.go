@@ -65,7 +65,14 @@ func resourceSamsonProjectCreate(d *schema.ResourceData, meta interface{}) error
 		project.Description = _samson.String(v.(string))
 	}
 
-	log.Printf("[TOLGA] Creating new project: %#v", project)
+	if v, ok := d.GetOk("environment_variable"); ok {
+		environmentVaribles := make([]*_samson.EnvironmentVariable, len(v.([]interface{})))
+		for i, d := range v.([]interface{}) {
+			environmentVaribles[i] = expandProjectEnvironmentVariable(d)
+		}
+		project.EnvironmentVariableAttributes = environmentVaribles
+	}
+
 	log.Printf("[INFO] Creating new project: %#v", project)
 
 	project, _, err := client.Projects.Upsert(project)
@@ -101,6 +108,17 @@ func resourceSamsonProjectRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	if project.Description != nil {
 		if err := d.Set("description", *project.Description); err != nil {
+			return err
+		}
+	}
+	if len(project.EnvironmentVariableAttributes) > 0 {
+		environmentVaribles := make([]interface{}, len(project.EnvironmentVariableAttributes))
+
+		for i, ev := range project.EnvironmentVariableAttributes {
+			environmentVaribles[i] = flattenProjectEnvironmentVariable(ev)
+		}
+
+		if err := d.Set("environment_variable", environmentVaribles); err != nil {
 			return err
 		}
 	}
@@ -154,4 +172,42 @@ func resourceSamsonProjectDelete(d *schema.ResourceData, meta interface{}) error
 	}
 
 	return nil
+}
+
+// Expanders
+
+func expandProjectEnvironmentVariable(in interface{}) *_samson.EnvironmentVariable {
+	ev := _samson.EnvironmentVariable{}
+
+	m := in.(map[string]interface{})
+
+	if v, ok := m["name"].(string); ok {
+		ev.Name = _samson.String(v)
+	}
+	if v, ok := m["value"].(string); ok {
+		ev.Value = _samson.String(v)
+	}
+	if v, ok := m["scope_type_and_id"].(string); ok {
+		ev.ScopeTypeAndID = _samson.String(v)
+	}
+
+	return &ev
+}
+
+// Flatteners
+
+func flattenProjectEnvironmentVariable(ev *_samson.EnvironmentVariable) interface{} {
+	m := make(map[string]interface{}, 0)
+
+	if ev.Name != nil {
+		m["name"] = *ev.Name
+	}
+	if ev.Value != nil {
+		m["value"] = *ev.Value
+	}
+	if ev.ScopeTypeAndID != nil {
+		m["scope_type_and_id"] = *ev.ScopeTypeAndID
+	}
+
+	return m
 }
